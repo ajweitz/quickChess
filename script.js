@@ -20,25 +20,40 @@ const testPosition = {
 	a3: "w", b4: "w", c3: "w", d2: "w", e5: "w", f2: "w", g2: "w", h2: "w",
 	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
 	a1: "Rw",b1: "Nw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", h1: "Rw",
-	a8: "Rb",b8: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
-	playedMove: "f7f5", canCastleLeft: true, canCastleRight: true, player: "white"
+	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
+	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
 };
 
 $('document').ready(function(){
-	generateBoard(columns, rows, true);
+	var position = testPosition;
+	generateBoard(columns, rows, (position.player == "white"));
 	var board = new Board(true);
-	board.map(STARTING_POSITION);
+	board.map(position);
 	board.draw();
-	board.map(testPosition);
-	board.draw();
-	board.possibleMoves("e5");
+	// board.possibleMoves("e5");
+	$(".draggable").draggable({ revert: "invalid" });
+	$(".droppable").droppable({drop: function( event, ui ) {
+        $( this )
+          .addClass( "ui-state-highlight" )
+          .find( "p" )
+            .html( "Dropped!" );
+      }, accept: function(draggable){
+ 
+      	var possibleMovesArr = board.possibleMoves($(draggable).parent().attr("id"));
+      	console.log($(this).attr("id"));
+      	for(let i = 0; i < possibleMovesArr.length; i++){
+      		if($(this).attr("id") == possibleMovesArr[i])
+      			return true;
+      	}
+      	return false;
+      }});
 });
 
 
 //Functions and Objects
 //Create div of square
 function generateSquare(letter, number, color){
-	const element = "<div class = 'square " + color + "' id='" + letter + number + "'></div>";
+	const element = "<div class = 'droppable square " + color + "' id='" + letter + number + "'></div>";
 	return element;
 }
 //append 64 squares to a board
@@ -158,7 +173,7 @@ Pawn.prototype.possibleMoves = function(board){
 				possibleMovesArr.push(board.playedMove[0]+"3");
 		}
 	}
-	alert(possibleMovesArr);
+	return possibleMovesArr;
 }
 
 //Rook constructor
@@ -199,9 +214,32 @@ Board.prototype.draw = function() {
 	for(let i = 0; i<squares.length; i++){
 		$("#"+squares[i]).empty();
 		if(this[squares[i]] != null){
-			const pieceImg = "<div class='piece'><img src='"+this[squares[i]].image+"'</img></div>";
+			if(this[squares[i]].color != this.player || !this.canMove){
+				var pieceImg = "<div class='piece'><img src='"+this[squares[i]].image+"'</img></div>";
+			}
+			else{
+				var pieceImg = "<div class='piece draggable'><img src='"+this[squares[i]].image+"'</img></div>";
+				$("#"+squares[i]).removeClass("droppable");
+			}
 			$("#"+squares[i]).append(pieceImg);	
 		}
+	}
+	if(this.playedMove != null){
+		var startingPosition = this.playedMove[0]+this.playedMove[1];
+		var destination = this.playedMove[2]+this.playedMove[3];
+		$("#"+startingPosition).css("background-color","yellow");
+		$("#"+destination).css("background-color","yellow");
+		var x = $("#"+destination).offset().left-$("#"+startingPosition).offset().left;
+		var y = $("#"+destination).offset().top-$("#"+startingPosition).offset().top;
+		console.log($("#"+destination).offset().top +" "+ $("#"+startingPosition).offset().top)
+		$("#"+startingPosition+" div").animate({left: x, top: y},500,function(){
+			console.log("hii");
+			$("#"+destination).empty();
+			$(this).appendTo("#"+destination);
+			$(this).removeAttr( 'style' );
+		});
+		this[startingPosition] = null;
+		this[destination] = this.playedPiece;
 	}
 };
 
@@ -220,11 +258,12 @@ Board.prototype.map = function(hash){
 		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player")
 			this[key] = pieceFactory(MAP[hash[key]][0], key, MAP[hash[key]][1]);
 	}
-	if(hash.hasOwnProperty("playedMove"))
+	if(hash.hasOwnProperty("playedMove")){
 		this.playedPiece = this[hash.playedMove[0]+hash.playedMove[1]];
+	}
 
 };
 Board.prototype.possibleMoves = function(square){
 
-	this[square].possibleMoves(this);
+	return this[square].possibleMoves(this);
 }
