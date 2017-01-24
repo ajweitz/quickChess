@@ -19,7 +19,7 @@ const STARTING_POSITION = {
 const testPosition = {
 	a3: "w", b4: "w", c3: "w", d2: "w", e5: "w", f2: "w", g2: "w", h2: "w",
 	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
-	a1: "Rw",b1: "Nw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", h1: "Rw",
+	a1: "Rw",b1: "Nw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw",
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
 	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
 };
@@ -30,17 +30,23 @@ $('document').ready(function(){
 	var board = new Board(true);
 	board.map(position);
 	board.draw();
-	// board.possibleMoves("e5");
 	$(".draggable").draggable({ revert: "invalid" });
 	$(".droppable").droppable({drop: function( event, ui ) {
-        $( this )
-          .addClass( "ui-state-highlight" )
-          .find( "p" )
-            .html( "Dropped!" );
+		//remove yellow highlight from squares
+		$("#"+board.playedMove[0]+board.playedMove[1]).removeAttr( 'style' );
+		$("#"+board.playedMove[2]+board.playedMove[3]).removeAttr( 'style' );
+		position[board.playedMove[2]+board.playedMove[3]] = position[board.playedMove[0]+board.playedMove[1]];
+		delete position[board.playedMove[0]+board.playedMove[1]];
+        var myMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
+        // console.log(myMove);
+        position.playedMove = myMove;
+        board.canMove = false;
+        board.map(position);
+        board.draw();
       }, accept: function(draggable){
  
       	var possibleMovesArr = board.possibleMoves($(draggable).parent().attr("id"));
-      	console.log($(this).attr("id"));
+      	// console.log(possibleMovesArr);
       	for(let i = 0; i < possibleMovesArr.length; i++){
       		if($(this).attr("id") == possibleMovesArr[i])
       			return true;
@@ -184,6 +190,58 @@ function Rook(position,color){
 }
 Rook.prototype = Object.create(Piece.prototype);
 
+Rook.prototype.possibleMoves = function(board){
+	var possibleMovesArr = [];
+	var thisLetterASCII = this.position.charCodeAt(0);
+	var thisLetter = this.position[0];
+	var thisNumber = this.position[1];
+
+	for(let i = +thisNumber + 1; i <= 8; i++ ){
+		var pos = thisLetter + i;
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	for(let i = +thisNumber - 1; i > 0 ; i-- ){
+		var pos = thisLetter + i;
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	for(let i = thisLetterASCII + 1; i <= "h".charCodeAt(0); i++ ){
+		var pos = String.fromCharCode(i) + thisNumber;
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	for(let i = thisLetterASCII - 1; i >= "a".charCodeAt(0); i-- ){
+		var pos = String.fromCharCode(i) + thisNumber;
+		if( board[pos] == null){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+	return possibleMovesArr;
+}
+
 //Knight constructor
 function Knight(position,color){
 	Piece.call(this, position, color);
@@ -219,7 +277,9 @@ Board.prototype.draw = function() {
 			}
 			else{
 				var pieceImg = "<div class='piece draggable'><img src='"+this[squares[i]].image+"'</img></div>";
-				$("#"+squares[i]).removeClass("droppable");
+				if(this.playedMove == null || squares[i] != this.playedMove[2]+this.playedMove[3]){
+					$("#"+squares[i]).removeClass("droppable");
+				}
 			}
 			$("#"+squares[i]).append(pieceImg);	
 		}
@@ -229,15 +289,18 @@ Board.prototype.draw = function() {
 		var destination = this.playedMove[2]+this.playedMove[3];
 		$("#"+startingPosition).css("background-color","yellow");
 		$("#"+destination).css("background-color","yellow");
-		var x = $("#"+destination).offset().left-$("#"+startingPosition).offset().left;
-		var y = $("#"+destination).offset().top-$("#"+startingPosition).offset().top;
-		console.log($("#"+destination).offset().top +" "+ $("#"+startingPosition).offset().top)
-		$("#"+startingPosition+" div").animate({left: x, top: y},500,function(){
-			console.log("hii");
+		if(this.canMove){
+			var x = $("#"+destination).offset().left-$("#"+startingPosition).offset().left;
+			var y = $("#"+destination).offset().top-$("#"+startingPosition).offset().top;
+			$("#"+startingPosition+" div").animate({left: x, top: y},500,function(){
+				$("#"+destination).empty();
+				$(this).appendTo("#"+destination);
+				$(this).removeAttr( 'style' );
+			});
+		}else{
 			$("#"+destination).empty();
-			$(this).appendTo("#"+destination);
-			$(this).removeAttr( 'style' );
-		});
+			$("#"+startingPosition+" div").appendTo("#"+destination);
+		}
 		this[startingPosition] = null;
 		this[destination] = this.playedPiece;
 	}
@@ -265,5 +328,7 @@ Board.prototype.map = function(hash){
 };
 Board.prototype.possibleMoves = function(square){
 
+	if (this[square] == null)
+		return [];
 	return this[square].possibleMoves(this);
 }
