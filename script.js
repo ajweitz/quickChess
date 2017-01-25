@@ -17,9 +17,9 @@ const STARTING_POSITION = {
 };
 //@todo: delete this
 const testPosition = {
-	a3: "w", b4: "w", c3: "w", d2: "w", e5: "w", f2: "w", g2: "w", h2: "w",
+	
 	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
-	a1: "Rw",b1: "Nw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw",
+	a1: "Rw",d4: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw",
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
 	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
 };
@@ -115,6 +115,8 @@ function King(position,color){
 	this.image = "king-"+color+".png";
 }
 King.prototype = Object.create(Piece.prototype);
+King.prototype.possibleMoves = function(board){
+}
 
 //Queen Constructor
 function Queen(position,color){
@@ -123,6 +125,12 @@ function Queen(position,color){
 	this.image = "queen-"+color+".png";
 }
 Queen.prototype = Object.create(Piece.prototype);
+
+Queen.prototype.possibleMoves = function(board){
+	var bishop = new Bishop(this.position, this.color);
+	var rook = new Rook(this.position, this.color);
+	return $.merge( bishop.possibleMoves(board), rook.possibleMoves(board) );
+}
 
 //Pawn constructor
 function Pawn(position,color){
@@ -250,6 +258,22 @@ function Knight(position,color){
 }
 Knight.prototype = Object.create(Piece.prototype);
 
+Knight.prototype.possibleMoves = function(board){
+	var thisLetterASCII = this.position.charCodeAt(0);
+	var thisNumber = this.position[1];
+	var possibleMovesArr = [ 
+		String.fromCharCode(thisLetterASCII+1) + (+thisNumber+2),
+		String.fromCharCode(thisLetterASCII+1) + (+thisNumber-2),
+		String.fromCharCode(thisLetterASCII-1) + (+thisNumber+2),
+		String.fromCharCode(thisLetterASCII-1) + (+thisNumber-2),
+		String.fromCharCode(thisLetterASCII+2) + (+thisNumber+1),
+		String.fromCharCode(thisLetterASCII+2) + (+thisNumber-1),
+		String.fromCharCode(thisLetterASCII-2) + (+thisNumber+1),
+		String.fromCharCode(thisLetterASCII-2) + (+thisNumber-1)
+	]
+	return possibleMovesArr;
+}
+
 //Bishop constructor
 function Bishop(position,color){
 	Piece.call(this, position, color);
@@ -257,6 +281,68 @@ function Bishop(position,color){
 	this.image = "bishop-"+color+".png";
 }
 Bishop.prototype = Object.create(Piece.prototype);
+Bishop.prototype.possibleMoves = function(board){
+	var possibleMovesArr = [];
+	var thisLetterASCII = this.position.charCodeAt(0);
+	var thisLetter = this.position[0];
+	var thisNumber = this.position[1];
+
+	var i = +thisNumber + 1;
+	var j = thisLetterASCII + 1;
+	for(; i <= 8 && j <= "h".charCodeAt(0); i++, j++ ){
+		var pos = String.fromCharCode(j) + i;
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	i = +thisNumber + 1;
+	j = thisLetterASCII - 1;
+	for(; i <= 8 && j >= "a".charCodeAt(0); i++, j-- ){
+		var pos = String.fromCharCode(j) + i;
+
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	i = +thisNumber - 1;
+	j = thisLetterASCII + 1;
+	for(; i >= 1 && j <= "h".charCodeAt(0); i--, j++ ){
+		var pos = String.fromCharCode(j) + i;
+		// console.log(pos);
+
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+
+	i = +thisNumber - 1;
+	j = thisLetterASCII - 1;
+	for(; i >= 0 && j >= "a".charCodeAt(0); i--, j-- ){
+		var pos = String.fromCharCode(j) + i;
+		if( board[pos] == null ){
+			possibleMovesArr.push(pos);
+		}else{
+			if(board[pos].color != this.color)
+				possibleMovesArr.push(pos);
+			break;
+		}
+	}
+	return possibleMovesArr;
+}
 
 //Board constructor
 function Board(canMove){
