@@ -18,7 +18,7 @@ const STARTING_POSITION = {
 //@todo: delete this
 const testPosition = {
 	
-	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
+	a5: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
 	a1: "Rw",d4: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw",
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
 	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
@@ -30,6 +30,7 @@ $('document').ready(function(){
 	var board = new Board(true);
 	board.map(position);
 	board.draw();
+	console.log(board.isSquareAttacked("b5"));
 	$(".draggable").draggable({ revert: "invalid" });
 	$(".droppable").droppable({drop: function( event, ui ) {
 		//remove yellow highlight from squares
@@ -116,7 +117,9 @@ function King(position,color){
 }
 King.prototype = Object.create(Piece.prototype);
 King.prototype.possibleMoves = function(board){
+
 }
+
 
 //Queen Constructor
 function Queen(position,color){
@@ -258,7 +261,7 @@ function Knight(position,color){
 }
 Knight.prototype = Object.create(Piece.prototype);
 
-Knight.prototype.possibleMoves = function(board){
+Knight.prototype.possibleMoves = function(){
 	var thisLetterASCII = this.position.charCodeAt(0);
 	var thisNumber = this.position[1];
 	var possibleMovesArr = [ 
@@ -350,10 +353,31 @@ function Board(canMove){
 	this.isChecked = false;
 	this.nullify();
 }
+Board.prototype.map = function(hash){
+	const MAP = {
+		"w": ["Pawn","white"], "b": ["Pawn","black"], "Rw": ["Rook","white"],"Rb": ["Rook","black"],
+		"Nw": ["Knight","white"], "Nb": ["Knight","black"], "Bw": ["Bishop","white"],"Bb": ["Bishop","black"],
+		"Kw": ["King","white"], "Kb": ["King","black"], "Qw": ["Queen","white"],"Qb": ["Queen","black"]
+	};
+	this.nullify();
+	this.playedMove = hash.playedMove;
+	this.canCastleLeft = hash.canCastleLeft;
+	this.canCastleRight = hash.canCastleRight;
+	this.player = hash.player;
+	for (var key in hash){
+		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player")
+			this[key] = pieceFactory(MAP[hash[key]][0], key, MAP[hash[key]][1]);
+	}
+	if(hash.hasOwnProperty("playedMove")){
+		this.playedPiece = this[hash.playedMove[0]+hash.playedMove[1]];
+	}
+
+};
 Board.prototype.nullify = function(){
 	for(let i = 0; i<squares.length; i++)
 		eval("this."+squares[i]+"=null");
 }
+
 Board.prototype.draw = function() {
 	for(let i = 0; i<squares.length; i++){
 		$("#"+squares[i]).empty();
@@ -392,29 +416,69 @@ Board.prototype.draw = function() {
 	}
 };
 
-Board.prototype.map = function(hash){
-	const MAP = {
-		"w": ["Pawn","white"], "b": ["Pawn","black"], "Rw": ["Rook","white"],"Rb": ["Rook","black"],
-		"Nw": ["Knight","white"], "Nb": ["Knight","black"], "Bw": ["Bishop","white"],"Bb": ["Bishop","black"],
-		"Kw": ["King","white"], "Kb": ["King","black"], "Qw": ["Queen","white"],"Qb": ["Queen","black"]
-	};
-	this.nullify();
-	this.playedMove = hash.playedMove;
-	this.canCastleLeft = hash.canCastleLeft;
-	this.canCastleRight = hash.canCastleRight;
-	this.player = hash.player;
-	for (var key in hash){
-		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player")
-			this[key] = pieceFactory(MAP[hash[key]][0], key, MAP[hash[key]][1]);
-	}
-	if(hash.hasOwnProperty("playedMove")){
-		this.playedPiece = this[hash.playedMove[0]+hash.playedMove[1]];
-	}
-
-};
 Board.prototype.possibleMoves = function(square){
 
 	if (this[square] == null)
 		return [];
 	return this[square].possibleMoves(this);
+}
+
+Board.prototype.isSquareAttacked = function(square){
+
+	var dummyKnight = new Knight(square, "white"); //color doesn't matter
+	var knightAttacks = dummyKnight.possibleMoves();
+
+	for(let i=0; i< knightAttacks.length; i++){
+		var piece = this[knightAttacks[i]];
+		if(piece != null && piece.color != this.player && piece.type === "knight")
+			return true;
+	}
+
+	var dummyBishop = new Bishop(square,this.player);
+	var bishopQueenAttacks =  dummyBishop.possibleMoves(this);
+
+	for(let i=0; i< bishopQueenAttacks.length; i++){
+		var piece = this[bishopQueenAttacks[i]];
+		if(piece != null && piece.color != this.player && (piece.type === "bishop" || piece.type === "queen"))
+			return true;
+	}
+
+	var dummyRook = new Rook(square,this.player);
+	var rookQueenAttacks =  dummyRook.possibleMoves(this);
+
+	for(let i=0; i< rookQueenAttacks.length; i++){
+		var piece = this[rookQueenAttacks[i]];
+		if(piece != null && piece.color != this.player && (piece.type === "rook" || piece.type === "queen"))
+			return true;
+	}
+
+	var dummyPawn = new Pawn(square,this.player);
+	var pawnAttacks =  dummyPawn.possibleMoves(this);
+
+	for(let i=0; i< pawnAttacks.length; i++){
+		var piece = this[pawnAttacks[i]];
+		if(piece != null && piece.color != this.player && piece.type === "pawn" && piece.position[0] != square[0])
+			return true;
+	}
+	var thisLetter = square[0];
+	var thisNumber = square[1];
+	var thisLetterASCII = square.charCodeAt(0);
+	var surroundingSquares = [
+		String.fromCharCode(thisLetterASCII+1)+thisNumber,
+		String.fromCharCode(thisLetterASCII-1)+thisNumber,
+		thisLetterASCII+(+thisNumber+1),
+		thisLetterASCII+(+thisNumber-1),
+		String.fromCharCode(thisLetterASCII+1)+(+thisNumber+1),
+		String.fromCharCode(thisLetterASCII+1)+(+thisNumber-1),
+		String.fromCharCode(thisLetterASCII-1)+(+thisNumber+1),
+		String.fromCharCode(thisLetterASCII-1)+(+thisNumber-1)
+		]
+
+	for(let i=0; i< surroundingSquares.length; i++){
+		var piece = this[surroundingSquares[i]];
+		if(piece != null && piece.color != this.player && piece.type === "king")
+			return true;
+	}
+
+	return false;
 }
