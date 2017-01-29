@@ -19,7 +19,7 @@ const STARTING_POSITION = {
 const testPosition = {
 	
 	a5: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
-	a1: "Rw",d4: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw",
+	a1: "Rw",d4: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw", 
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
 	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
 };
@@ -45,7 +45,10 @@ $('document').ready(function(){
         board.map(position);
         board.draw();
       }, accept: function(draggable){
- 
+ 				
+ 				if(board.isChecked && board[$(draggable).parent().attr("id")].type != "king"){
+ 					return false;
+ 				}
       	var possibleMovesArr = board.possibleMoves($(draggable).parent().attr("id"));
       	// console.log(possibleMovesArr);
       	for(let i = 0; i < possibleMovesArr.length; i++){
@@ -116,8 +119,17 @@ function King(position,color){
 	this.image = "king-"+color+".png";
 }
 King.prototype = Object.create(Piece.prototype);
-King.prototype.possibleMoves = function(board){
 
+King.prototype.possibleMoves = function(board){
+	var candidateSquares = surroundingSquares(this.position);
+	var possibleMovesArr = [];
+	for(let i = 0; i < candidateSquares.length; i++){
+		console.log(candidateSquares);
+		if (!board.isSquareAttacked(candidateSquares[i]))
+			possibleMovesArr.push(candidateSquares[i]);
+	}
+
+	return possibleMovesArr;
 }
 
 
@@ -359,19 +371,25 @@ Board.prototype.map = function(hash){
 		"Nw": ["Knight","white"], "Nb": ["Knight","black"], "Bw": ["Bishop","white"],"Bb": ["Bishop","black"],
 		"Kw": ["King","white"], "Kb": ["King","black"], "Qw": ["Queen","white"],"Qb": ["Queen","black"]
 	};
+	var myKing;
 	this.nullify();
 	this.playedMove = hash.playedMove;
 	this.canCastleLeft = hash.canCastleLeft;
 	this.canCastleRight = hash.canCastleRight;
 	this.player = hash.player;
 	for (var key in hash){
-		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player")
+		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player"){
 			this[key] = pieceFactory(MAP[hash[key]][0], key, MAP[hash[key]][1]);
+			if(MAP[hash[key]][0] == "King" && MAP[hash[key]][1] == this.player)
+				myKing = key;
+		}
 	}
 	if(hash.hasOwnProperty("playedMove")){
 		this.playedPiece = this[hash.playedMove[0]+hash.playedMove[1]];
 	}
-
+	if(this.isSquareAttacked(myKing)){
+		this.isChecked = true;
+	}
 };
 Board.prototype.nullify = function(){
 	for(let i = 0; i<squares.length; i++)
@@ -425,6 +443,7 @@ Board.prototype.possibleMoves = function(square){
 
 Board.prototype.isSquareAttacked = function(square){
 
+	console.log(square);
 	var dummyKnight = new Knight(square, "white"); //color doesn't matter
 	var knightAttacks = dummyKnight.possibleMoves();
 
@@ -463,22 +482,44 @@ Board.prototype.isSquareAttacked = function(square){
 	var thisLetter = square[0];
 	var thisNumber = square[1];
 	var thisLetterASCII = square.charCodeAt(0);
-	var surroundingSquares = [
-		String.fromCharCode(thisLetterASCII+1)+thisNumber,
-		String.fromCharCode(thisLetterASCII-1)+thisNumber,
-		thisLetterASCII+(+thisNumber+1),
-		thisLetterASCII+(+thisNumber-1),
-		String.fromCharCode(thisLetterASCII+1)+(+thisNumber+1),
-		String.fromCharCode(thisLetterASCII+1)+(+thisNumber-1),
-		String.fromCharCode(thisLetterASCII-1)+(+thisNumber+1),
-		String.fromCharCode(thisLetterASCII-1)+(+thisNumber-1)
-		]
+	var kingMoves = surroundingSquares(square);
 
-	for(let i=0; i< surroundingSquares.length; i++){
-		var piece = this[surroundingSquares[i]];
+	for(let i=0; i < kingMoves.length; i++){
+		var piece = this[kingMoves[i]];
 		if(piece != null && piece.color != this.player && piece.type === "king")
 			return true;
 	}
 
 	return false;
+}
+
+function surroundingSquares(position){
+	var thisLetterASCII = position.charCodeAt(0);
+	var thisNumber = position[1];
+	var tempSquares = [
+		String.fromCharCode(thisLetterASCII+1)+thisNumber,
+		String.fromCharCode(thisLetterASCII-1)+thisNumber,
+		String.fromCharCode(thisLetterASCII)+(+thisNumber+1),
+		String.fromCharCode(thisLetterASCII)+(+thisNumber-1),
+		String.fromCharCode(thisLetterASCII+1)+(+thisNumber+1),
+		String.fromCharCode(thisLetterASCII+1)+(+thisNumber-1),
+		String.fromCharCode(thisLetterASCII-1)+(+thisNumber+1),
+		String.fromCharCode(thisLetterASCII-1)+(+thisNumber-1)
+		];
+	var result = [];
+	for(let i=0; i<tempSquares.length; i++){
+		if(isLegalPosition(tempSquares[i]))
+			result.push(tempSquares[i]);
+	}
+	return result;
+}
+
+function isLegalPosition(position){
+	try {
+		var thisLetterASCII = position.charCodeAt(0);
+		var thisNumber = position[1];
+		return !(thisLetterASCII > "h".charCodeAt(0) || thisLetterASCII < "a".charCodeAt(0) || thisNumber > 8 || thisNumber < 1);
+	}catch(err){
+		return false;
+	}
 }
