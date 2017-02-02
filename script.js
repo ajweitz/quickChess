@@ -13,15 +13,15 @@ const STARTING_POSITION = {
 	a2: "w", b2: "w", c2: "w", d2: "w", e2: "w", f2: "w", g2: "w", h2: "w",
 	a7: "b", b7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
 	a1: "Rw",b1: "Nw", c1: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", h1: "Rw",
-	a8: "Rb",b8: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb", canCastleLeft: true, canCastleRight: true, player: "white"
+	a8: "Rb",b8: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb", canShortCastle: true, canLongCastle: true, player: "white"
 };
 //@todo: delete this
 const testPosition = {
 	
 	a5: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
-	a1: "Rw",d4: "Bw", d1: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw", 
+	a1: "Rw",d4: "Bw", d2: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw", 
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
-	playedMove: "c6e5", canCastleLeft: true, canCastleRight: true, player: "white"
+	playedMove: "c6e5", canShortCastle: true, canLongCastle: true, player: "white"
 };
 
 $('document').ready(function(){
@@ -129,9 +129,31 @@ King.prototype.possibleMoves = function(board){
 			possibleMovesArr.push(candidateSquares[i]);
 	}
 
+	if (this.canShortCastle(board))
+		possibleMovesArr.push(String.fromCharCode(this.position.charCodeAt(0)+2) + this.position[1]);
+	if (this.canLongCastle(board))
+		possibleMovesArr.push(String.fromCharCode(this.position.charCodeAt(0)-2) + this.position[1]);
 	return possibleMovesArr;
 }
 
+King.prototype.canShortCastle = function(board){
+	var thisLetterASCII = this.position.charCodeAt(0);
+	var thisNumber = this.position[1];
+	var kingSideSquare = String.fromCharCode(thisLetterASCII+1) + thisNumber;
+	var rookSideSquare = String.fromCharCode(thisLetterASCII+2) + thisNumber;
+
+	return board[kingSideSquare] == null && board[rookSideSquare] == null && !board.isSquareAttacked(kingSideSquare) && !board.isSquareAttacked(rookSideSquare);
+}
+King.prototype.canLongCastle = function(board){
+	var thisLetterASCII = this.position.charCodeAt(0);
+	var thisNumber = this.position[1];
+	var kingSideSquare = String.fromCharCode(thisLetterASCII-1) + thisNumber;
+	var middleSquare = String.fromCharCode(thisLetterASCII-2) + thisNumber;
+	var rookSideSquare = String.fromCharCode(thisLetterASCII-3) + thisNumber;
+
+	return board[middleSquare] == null && board[kingSideSquare] == null && board[rookSideSquare] == null && 
+		!board.isSquareAttacked(kingSideSquare) && !board.isSquareAttacked(middleSquare) && !board.isSquareAttacked(rookSideSquare);
+}
 
 //Queen Constructor
 function Queen(position,color){
@@ -374,11 +396,11 @@ Board.prototype.map = function(hash){
 	var myKing;
 	this.nullify();
 	this.playedMove = hash.playedMove;
-	this.canCastleLeft = hash.canCastleLeft;
-	this.canCastleRight = hash.canCastleRight;
+	this.canShortCastle = hash.canShortCastle;
+	this.canLongCastle = hash.canLongCastle;
 	this.player = hash.player;
 	for (var key in hash){
-		if (key != "playedMove" && key != "canCastleLeft" && key != "canCastleRight" && key != "player"){
+		if (key != "playedMove" && key != "canShortCastle" && key != "canLongCastle" && key != "player"){
 			this[key] = pieceFactory(MAP[hash[key]][0], key, MAP[hash[key]][1]);
 			if(MAP[hash[key]][0] == "King" && MAP[hash[key]][1] == this.player)
 				myKing = key;
@@ -523,3 +545,4 @@ function isLegalPosition(position){
 		return false;
 	}
 }
+
