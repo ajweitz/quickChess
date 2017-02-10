@@ -18,10 +18,10 @@ const STARTING_POSITION = {
 //@todo: delete this
 const testPosition = {
 	
-	a5: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b",
+	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b", b5: "w",
 	a1: "Rw",d4: "Bw", d2: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw", 
 	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
-	playedMove: "c6e5", canShortCastle: true, canLongCastle: true, player: "white"
+	playedMove: "a7a5", canShortCastle: true, canLongCastle: true, player: "white"
 };
 
 $('document').ready(function(){
@@ -57,8 +57,8 @@ $('document').ready(function(){
     	}
     	position[newRookLocation] = position[rookLocation];
     	delete position[rookLocation];
-    }else if(myPiece == "pawn"){
-
+    }else if(myPiece == "pawn" && myMove.charCodeAt(0)-myMove.charCodeAt(2) != 0 && board[myMove[2]+myMove[3]] == null ){
+    	delete position[myMove[2]+myMove[1]];
     }
     // console.log(myMove);
     position.playedMove = myMove;
