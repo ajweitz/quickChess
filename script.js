@@ -38,12 +38,33 @@ $('document').ready(function(){
 		$("#"+board.playedMove[2]+board.playedMove[3]).removeAttr( 'style' );
 		position[board.playedMove[2]+board.playedMove[3]] = position[board.playedMove[0]+board.playedMove[1]];
 		delete position[board.playedMove[0]+board.playedMove[1]];
-        var myMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
-        // console.log(myMove);
-        position.playedMove = myMove;
-        board.canMove = false;
-        board.map(position);
-        board.draw();
+
+    var myMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
+    var myPiece = board[myMove[0]+myMove[1]].type;
+
+    // check for castling
+    if (myPiece == "king" && Math.abs(myMove.charCodeAt(0)-myMove.charCodeAt(2)) > 1){
+    	var rookLocation;
+    	var newRookLocation;
+    	if(myMove[2] == "c"){
+    		rookLocation = "a" + myMove[1];
+    		newRookLocation = "d" + myMove[1];
+    	}
+    	else{
+    		rookLocation = "h" + myMove[1];
+    		newRookLocation = "f" + myMove[1];
+
+    	}
+    	position[newRookLocation] = position[rookLocation];
+    	delete position[rookLocation];
+    }else if(myPiece == "pawn"){
+
+    }
+    // console.log(myMove);
+    position.playedMove = myMove;
+    board.canMove = false;
+    board.map(position);
+    board.draw();
       }, accept: function(draggable){
  				
  				if(board.isChecked && board[$(draggable).parent().attr("id")].type != "king"){
