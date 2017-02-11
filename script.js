@@ -2,6 +2,7 @@
 
 const columns = "abcdefgh".split("");
 const rows = "12345678".split("");
+const ANIMATION_SPEED = 500;
 var squares = [];
 	for (let i = 0; i < rows.length; i++) {
 		for (let j = 0; j < columns.length; j++){
@@ -18,10 +19,10 @@ const STARTING_POSITION = {
 //@todo: delete this
 const testPosition = {
 	
-	a7: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b", b5: "w",
+	a4: "b", c7: "b", d7: "b", e7: "b", f7: "b", g7: "b", h7: "b", b4: "w",
 	a1: "Rw",d4: "Bw", d2: "Qw", e1: "Kw", f1: "Bw", g1: "Nw", e4: "Rw", 
-	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", f8: "Bb", g8: "Nb", h8: "Rb",
-	playedMove: "a7a5", canShortCastle: true, canLongCastle: true, player: "white"
+	a8: "Rb",c6: "Nb", c8: "Bb", d8: "Qb", e8: "Kb", h8: "Rb",
+	playedMove: "e8g8", canShortCastle: true, canLongCastle: true, player: "white"
 };
 
 $('document').ready(function(){
@@ -36,15 +37,9 @@ $('document').ready(function(){
 		//remove yellow highlight from squares
 		$("#"+board.playedMove[0]+board.playedMove[1]).removeAttr( 'style' );
 		$("#"+board.playedMove[2]+board.playedMove[3]).removeAttr( 'style' );
-		position[board.playedMove[2]+board.playedMove[3]] = position[board.playedMove[0]+board.playedMove[1]];
-		delete position[board.playedMove[0]+board.playedMove[1]];
 
-    var myMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
-    var myPiece = board[myMove[0]+myMove[1]].type;
-
-    position.playedMove = myMove;
+    board.playedMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
     board.canMove = false;
-    board.map(position);
     board.draw();
       }, accept: function(draggable){
  				
@@ -446,7 +441,7 @@ Board.prototype.draw = function() {
 		if(this.canMove){
 			var x = $("#"+destination).offset().left-$("#"+startingPosition).offset().left;
 			var y = $("#"+destination).offset().top-$("#"+startingPosition).offset().top;
-			$("#"+startingPosition+" div").animate({left: x, top: y},500,function(){
+			$("#"+startingPosition+" div").animate({left: x, top: y},ANIMATION_SPEED,function(){
 				$("#"+destination).empty();
 				$(this).appendTo("#"+destination);
 				$(this).removeAttr( 'style' );
@@ -476,12 +471,12 @@ Board.prototype.draw = function() {
     	$("#"+rookLocation+" div").appendTo("#"+newRookLocation);
     	this[newRookLocation] = this[rookLocation];
 
-    	delete this[rookLocation];
+    	this[rookLocation] = null;
     	$("#"+rookLocation).empty();
     }else if(playedPiece == "pawn" && startingPosition.charCodeAt(0)-destination.charCodeAt(0) != 0 && board[destination[0]+destination[1]] == null ){
     	var pawnLocation = destination[0]+startingPosition[1];
-    	delete this[pawnLocation];
-    	$("#"+pawnLocation).empty();
+    	this[pawnLocation] = null;
+    	$("#"+pawnLocation).empty().addClass("droppable");;
     }
 
 
