@@ -42,25 +42,6 @@ $('document').ready(function(){
     var myMove = $(ui.draggable).parent().attr("id") + $( this ).attr("id");
     var myPiece = board[myMove[0]+myMove[1]].type;
 
-    // check for castling
-    if (myPiece == "king" && Math.abs(myMove.charCodeAt(0)-myMove.charCodeAt(2)) > 1){
-    	var rookLocation;
-    	var newRookLocation;
-    	if(myMove[2] == "c"){
-    		rookLocation = "a" + myMove[1];
-    		newRookLocation = "d" + myMove[1];
-    	}
-    	else{
-    		rookLocation = "h" + myMove[1];
-    		newRookLocation = "f" + myMove[1];
-
-    	}
-    	position[newRookLocation] = position[rookLocation];
-    	delete position[rookLocation];
-    }else if(myPiece == "pawn" && myMove.charCodeAt(0)-myMove.charCodeAt(2) != 0 && board[myMove[2]+myMove[3]] == null ){
-    	delete position[myMove[2]+myMove[1]];
-    }
-    // console.log(myMove);
     position.playedMove = myMove;
     board.canMove = false;
     board.map(position);
@@ -458,8 +439,10 @@ Board.prototype.draw = function() {
 	if(this.playedMove != null){
 		var startingPosition = this.playedMove[0]+this.playedMove[1];
 		var destination = this.playedMove[2]+this.playedMove[3];
+		var playedPiece = this[startingPosition].type;
 		$("#"+startingPosition).css("background-color","yellow");
 		$("#"+destination).css("background-color","yellow");
+
 		if(this.canMove){
 			var x = $("#"+destination).offset().left-$("#"+startingPosition).offset().left;
 			var y = $("#"+destination).offset().top-$("#"+startingPosition).offset().top;
@@ -468,10 +451,40 @@ Board.prototype.draw = function() {
 				$(this).appendTo("#"+destination);
 				$(this).removeAttr( 'style' );
 			});
+			if (this[startingPosition].type == "pawn"){
+
+			}else if(this[startingPosition].king == "pawn"){
+
+			}
 		}else{
 			$("#"+destination).empty();
 			$("#"+startingPosition+" div").appendTo("#"+destination);
 		}
+
+		if (playedPiece == "king" && Math.abs(startingPosition.charCodeAt(0)-destination.charCodeAt(0)) > 1){
+    	var rookLocation;
+    	var newRookLocation;
+    	if(destination[0] == "c"){
+    		rookLocation = "a" + startingPosition[1];
+    		newRookLocation = "d" + startingPosition[1];
+    	}
+    	else{
+    		rookLocation = "h" + startingPosition[1];
+    		newRookLocation = "f" + startingPosition[1];
+
+    	}
+    	$("#"+rookLocation+" div").appendTo("#"+newRookLocation);
+    	this[newRookLocation] = this[rookLocation];
+
+    	delete this[rookLocation];
+    	$("#"+rookLocation).empty();
+    }else if(playedPiece == "pawn" && startingPosition.charCodeAt(0)-destination.charCodeAt(0) != 0 && board[destination[0]+destination[1]] == null ){
+    	var pawnLocation = destination[0]+startingPosition[1];
+    	delete this[pawnLocation];
+    	$("#"+pawnLocation).empty();
+    }
+
+
 		this[startingPosition] = null;
 		this[destination] = this.playedPiece;
 	}
